@@ -33,7 +33,20 @@ dialog{width:min(1360px,97vw)}.dialoghead{justify-content:center;position:sticky
 .search-result p{margin:4px 0;font-size:13px}
 .search-result button{min-height:38px}
 
-</style></head><body class="logged-out"><header><div class="brand"><button id="navToggle" class="hamb" aria-label="Abrir ou fechar menu" aria-expanded="true">☰</button><h1>📦 WMS • Unidades <span class="badge">v1.9 • Blocos A-Z</span></h1></div><div class="clock"><strong id="clockTime">--:--:--</strong><small id="clockDate"></small></div></header><div id="navBackdrop"></div><aside id="sideNav"><div class="nav-caption">GESTÃO DE ARMAZENAGEM</div><button id="navMap" class="active">🗺️ WMS • Localizações</button><button id="navConfig" hidden>⚙️ Configuração dos blocos</button><div class="userbox"><div id="identity"></div><button id="changePassword" hidden>🔑 ALTERAR MINHA SENHA</button><button id="exit" hidden>SAIR DO SISTEMA</button><div class="nav-foot">UIA • UIA2 • UIA3 • UIA5</div></div></aside><main>
+
+/* Pesquisa por palete: cartões individuais, como no WMS do PCE */
+#searchResults{background:#edf4f9;border:1px solid #b6cfe0;border-radius:16px;padding:18px;margin-bottom:20px}
+.result-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.result-heading h3{margin:0!important;color:#153e61!important;font-size:19px}
+.result-heading span{color:#58748c;font-size:13px}
+.result-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:12px}
+.result-card{background:white;border:1px solid #b7cee0;border-left:6px solid #5b9fca;border-radius:13px;padding:16px;min-width:0}
+.result-card h4{font-size:19px;line-height:1.25;color:#14527f;margin:0 0 10px;font-weight:800}
+.result-subtitle{font-size:13px;color:#5c7990;font-weight:700;margin-bottom:12px}
+.result-address{display:inline-block;min-height:40px;padding:8px 13px;margin-bottom:12px;background:#e4f1fb;border:1px solid #a5c8e3;border-radius:9px;color:#135584;font-size:17px;font-weight:800}
+.result-details{font-size:13px;line-height:1.7;overflow-wrap:anywhere;color:#17364d}
+@media(max-width:600px){.result-grid{grid-template-columns:1fr}.result-card{padding:14px}}
+</style></head><body class="logged-out"><header><div class="brand"><button id="navToggle" class="hamb" aria-label="Abrir ou fechar menu" aria-expanded="true">☰</button><h1>📦 WMS • Unidades <span class="badge">v2.0 • Busca por palete</span></h1></div><div class="clock"><strong id="clockTime">--:--:--</strong><small id="clockDate"></small></div></header><div id="navBackdrop"></div><aside id="sideNav"><div class="nav-caption">GESTÃO DE ARMAZENAGEM</div><button id="navMap" class="active">🗺️ WMS • Localizações</button><button id="navConfig" hidden>⚙️ Configuração dos blocos</button><div class="userbox"><div id="identity"></div><button id="changePassword" hidden>🔑 ALTERAR MINHA SENHA</button><button id="exit" hidden>SAIR DO SISTEMA</button><div class="nav-foot">UIA • UIA2 • UIA3 • UIA5</div></div></aside><main>
 <section id="login" class="card login"><h2>Acesso à unidade</h2><p class="muted">Use seu e-mail e senha cadastrados. A unidade é definida na sua liberação.</p><form id="loginForm"><label>E-mail</label><input id="email" type="email" autocomplete="username" required><label>Senha</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" style="width:100%;margin-top:16px">Entrar</button></form><p id="loginMsg" class="error" role="alert"></p></section>
 <section id="app" hidden><div class="map-heading"><h2>WMS • Mapa de Localizações</h2><div class="map-legend"><span><i class="free-dot"></i>Livre</span><span><i class="used-dot"></i>Ocupado</span></div></div><div class="unit-tools"><label for="unit">Unidade</label><select id="unit"></select><button id="configure" hidden>⚙ CONFIGURAR BLOCOS</button><span id="status" role="status"></span></div><div id="summary" class="wms-metrics"></div><div class="quick-withdraw"><div class="quick-heading"><h3>📤 Baixa rápida por barra palete</h3><span>Bipe a barra ou digite e pressione Enter. Informe quantos paletes serão retirados.</span></div><div class="map-toolbar"><input id="withdrawBar" aria-label="Barra para dar baixa" placeholder="Bipe ou digite a barra palete..."><button id="cameraWithdraw">📷 CÂMERA</button><button id="withdrawStart" class="primary">BAIXAR BARRA</button></div></div><div class="map-toolbar search-toolbar"><input id="search" aria-label="Pesquisar local, barra ou item" placeholder="Buscar local, barra palete ou código do item..."><button id="cameraSearch">📷 CÂMERA</button><button id="reload">ATUALIZAR MAPA</button></div><div id="searchResults" aria-live="polite" hidden></div><div id="map"></div></section>
 </main><dialog id="modal"><div class="dialoghead"><strong id="modalTitle"></strong><button id="closeModal" aria-label="Fechar">✕</button></div><div id="modalBody" class="dialogbody"></div></dialog>
@@ -68,7 +81,7 @@ function render(){
   for(let n=0;n<b.count;n++){
    const loc=b.code+'-'+String(n+1).padStart(2,'0'),ss=slots(loc),c=config(loc),cap=c.height*c.depth;
    total+=ss.length;capacity+=cap;if(ss.length)occupied++;
-   const locMatch=!!q&&loc.toLowerCase().includes(q);
+   const locMatch=!!q&&/^[a-z]{1,3}-\d+$/i.test(q)&&loc.toLowerCase().includes(q);
    const found=ss.filter(s=>[s.palletBar,s.itemCode].some(v=>String(v||'').toLowerCase().includes(q)));
    if(q&&!locMatch&&!found.length)continue;
    if(q)matches.push({loc,slots:locMatch?ss:found,locMatch});
@@ -82,7 +95,19 @@ function render(){
  $('summary').innerHTML=[['Posições totalmente livres',locations().length-occupied,''],['Posições com ocupação',occupied,'red'],['Paletes ocupados',total,'orange'],['Vagas disponíveis',Math.max(0,capacity-total),'']].map(([label,value,color])=>'<div class="metric-card"><span>'+label+'</span><strong class="'+color+'">'+value+'</strong></div>').join('');
  const panel=$('searchResults');panel.hidden=!q;
  if(q){
-  panel.innerHTML='<h3>🔎 Onde está o palete • '+matches.length+' posição(ões)</h3>'+(matches.length?matches.map(m=>'<div class="search-result"><div><b>📍 '+esc(m.loc)+'</b> • '+esc(activeUnit)+(m.slots.length?m.slots.map(s=>'<p>Barra: <b>'+esc(s.palletBar)+'</b> • Item: <b>'+esc(s.itemCode)+'</b> • H'+s.height+' / P'+s.depth+' • Entrada: '+esc(date(s.palletizedAt))+'</p>').join(''):'<p>Posição livre</p>')+'</div><button type="button" data-result-loc="'+m.loc+'">ABRIR POSIÇÃO</button></div>').join(''):'<p>Nenhum palete ou endereço encontrado nesta unidade.</p>');
+  const addressSearch=/^[A-Z]{1,3}-\d+$/i.test(q);
+  const results=[];
+  for(const b of structure.blocks){
+   for(let n=1;n<=b.count;n++){
+    const loc=b.code+'-'+String(n).padStart(2,'0');
+    const addressMatch=addressSearch&&loc.toLowerCase().includes(q);
+    for(const s of slots(loc)){
+     if(addressMatch||[s.palletBar,s.itemCode].some(v=>String(v||'').toLowerCase().includes(q)))results.push({loc,s});
+    }
+   }
+  }
+  panel.innerHTML='<div class="result-heading"><h3>🔎 Onde está o palete</h3><span>'+results.length+' resultado(s) encontrado(s)</span></div>'+
+   (results.length?'<div class="result-grid">'+results.map(({loc,s})=>'<article class="result-card"><h4>BLOCO '+esc(loc.split('-')[0])+'</h4><div class="result-subtitle">Posição '+esc(loc)+' • '+esc(activeUnit)+'</div><button type="button" class="result-address" data-result-loc="'+esc(loc)+'">📍 '+esc(loc)+'-H'+s.height+'-P'+s.depth+'</button><div class="result-details"><b>Altura:</b> H'+s.height+'　•　<b>Profundidade:</b> P'+s.depth+'<div><b>Entrada:</b> '+esc(date(s.palletizedAt))+'</div><div><b>Barra palete:</b> '+esc(s.palletBar)+'</div><div><b>Código:</b> '+esc(s.itemCode)+'</div></div></article>').join('')+'</div>':'<p>Nenhum palete encontrado nesta unidade.</p>');
   panel.querySelectorAll('[data-result-loc]').forEach(btn=>btn.onclick=()=>openLocation(btn.dataset.resultLoc));
  }
  $('map').querySelectorAll('[data-loc]').forEach(btn=>btn.onclick=()=>openLocation(btn.dataset.loc));
