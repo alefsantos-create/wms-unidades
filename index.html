@@ -27,9 +27,15 @@ dialog{width:min(1360px,97vw)}.dialoghead{justify-content:center;position:sticky
 @media(min-width:1500px){.wms-address-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}}
 @media(max-width:550px){.wms-address-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.place{min-height:145px;padding:9px 5px 7px}.place .loc-title{font-size:17px}.level-row{gap:2px}.loc-count{font-size:11px}}
 #configure{display:none!important}
+#searchResults{margin:0 0 18px;padding:16px;background:#f5faff;border:1px solid #91bddb;border-radius:12px}
+#searchResults h3{margin:0 0 10px;color:#185b81}
+.search-result{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:white;border:1px solid #c9dfed;border-radius:9px;padding:12px;margin-top:8px}
+.search-result p{margin:4px 0;font-size:13px}
+.search-result button{min-height:38px}
+
 </style></head><body class="logged-out"><header><div class="brand"><button id="navToggle" class="hamb" aria-label="Abrir ou fechar menu" aria-expanded="true">☰</button><h1>📦 WMS • Unidades <span class="badge">v1.9 • Blocos A-Z</span></h1></div><div class="clock"><strong id="clockTime">--:--:--</strong><small id="clockDate"></small></div></header><div id="navBackdrop"></div><aside id="sideNav"><div class="nav-caption">GESTÃO DE ARMAZENAGEM</div><button id="navMap" class="active">🗺️ WMS • Localizações</button><button id="navConfig" hidden>⚙️ Configuração dos blocos</button><div class="userbox"><div id="identity"></div><button id="changePassword" hidden>🔑 ALTERAR MINHA SENHA</button><button id="exit" hidden>SAIR DO SISTEMA</button><div class="nav-foot">UIA • UIA2 • UIA3 • UIA5</div></div></aside><main>
 <section id="login" class="card login"><h2>Acesso à unidade</h2><p class="muted">Use seu e-mail e senha cadastrados. A unidade é definida na sua liberação.</p><form id="loginForm"><label>E-mail</label><input id="email" type="email" autocomplete="username" required><label>Senha</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" style="width:100%;margin-top:16px">Entrar</button></form><p id="loginMsg" class="error" role="alert"></p></section>
-<section id="app" hidden><div class="map-heading"><h2>WMS • Mapa de Localizações</h2><div class="map-legend"><span><i class="free-dot"></i>Livre</span><span><i class="used-dot"></i>Ocupado</span></div></div><div class="unit-tools"><label for="unit">Unidade</label><select id="unit"></select><button id="configure" hidden>⚙ CONFIGURAR BLOCOS</button><span id="status" role="status"></span></div><div id="summary" class="wms-metrics"></div><div class="quick-withdraw"><div class="quick-heading"><h3>📤 Baixa rápida por barra palete</h3><span>Bipe a barra ou digite e pressione Enter. Informe quantos paletes serão retirados.</span></div><div class="map-toolbar"><input id="withdrawBar" aria-label="Barra para dar baixa" placeholder="Bipe ou digite a barra palete..."><button id="cameraWithdraw">📷 CÂMERA</button><button id="withdrawStart" class="primary">BAIXAR BARRA</button></div></div><div class="map-toolbar search-toolbar"><input id="search" aria-label="Pesquisar local, barra ou item" placeholder="Buscar local, barra palete ou código do item..."><button id="cameraSearch">📷 CÂMERA</button><button id="reload">ATUALIZAR MAPA</button></div><div id="map"></div></section>
+<section id="app" hidden><div class="map-heading"><h2>WMS • Mapa de Localizações</h2><div class="map-legend"><span><i class="free-dot"></i>Livre</span><span><i class="used-dot"></i>Ocupado</span></div></div><div class="unit-tools"><label for="unit">Unidade</label><select id="unit"></select><button id="configure" hidden>⚙ CONFIGURAR BLOCOS</button><span id="status" role="status"></span></div><div id="summary" class="wms-metrics"></div><div class="quick-withdraw"><div class="quick-heading"><h3>📤 Baixa rápida por barra palete</h3><span>Bipe a barra ou digite e pressione Enter. Informe quantos paletes serão retirados.</span></div><div class="map-toolbar"><input id="withdrawBar" aria-label="Barra para dar baixa" placeholder="Bipe ou digite a barra palete..."><button id="cameraWithdraw">📷 CÂMERA</button><button id="withdrawStart" class="primary">BAIXAR BARRA</button></div></div><div class="map-toolbar search-toolbar"><input id="search" aria-label="Pesquisar local, barra ou item" placeholder="Buscar local, barra palete ou código do item..."><button id="cameraSearch">📷 CÂMERA</button><button id="reload">ATUALIZAR MAPA</button></div><div id="searchResults" aria-live="polite" hidden></div><div id="map"></div></section>
 </main><dialog id="modal"><div class="dialoghead"><strong id="modalTitle"></strong><button id="closeModal" aria-label="Fechar">✕</button></div><div id="modalBody" class="dialogbody"></div></dialog>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script><script src="firebase-config.js"></script>
 <script>
@@ -53,17 +59,35 @@ function close(){if(busy)return;stopCamera();$('modal').close()}
 function show(title,body){stopCamera();$('modalTitle').textContent=title;$('modalBody').innerHTML=body;if(!$('modal').open)$('modal').showModal()}
 async function load(){const unit=activeUnit,seq=++loadSequence;notice('Carregando '+unit+'...');const [s,r]=await Promise.all([read('wms_structure',unit),read('wms',unit)]);if(unit!==activeUnit||seq!==loadSequence)return;structure=s||defaults(unit);rows=r||{};render();notice('Mapa atualizado • '+unit)}
 function render(){
- if(!structure)return;const q=$('search').value.trim().toLowerCase();let total=0,occupied=0,capacity=0;const oldest=new Map();
+ if(!structure)return;
+ const q=$('search').value.trim().toLowerCase();let total=0,occupied=0,capacity=0;const oldest=new Map(),matches=[];
  for(const row of Object.values(rows))for(const s of row?.slots||[]){if(!s?.palletizedAt)continue;const k=s.itemCode||s.palletBar;if(!oldest.has(k)||s.palletizedAt<oldest.get(k))oldest.set(k,s.palletizedAt)}
- $('map').innerHTML=structure.blocks.map(b=>'<div class="card wms-block"><div class="block-heading"><h2>BLOCO '+esc(b.code)+'</h2><small>'+b.count+' posições • '+esc(activeUnit)+'</small></div><div class="grid wms-address-grid">'+Array.from({length:b.count},(_,n)=>{
- const loc=b.code+'-'+String(n+1).padStart(2,'0'),ss=slots(loc),c=config(loc),cap=c.height*c.depth,hit=q&&(loc.toLowerCase().includes(q)||ss.some(s=>[s.palletBar,s.itemCode].some(v=>String(v||'').toLowerCase().includes(q))));total+=ss.length;capacity+=cap;if(ss.length)occupied++;
- const cells=new Map(ss.map(s=>[s.height+'-'+s.depth,s]));
- const levels=Array.from({length:c.height},(_,i)=>{const h=c.height-i;return '<span class="level-row" style="grid-template-columns:25px repeat('+c.depth+',minmax(0,1fr))"><b>H'+h+'</b>'+Array.from({length:c.depth},(_,j)=>{const d=j+1,s=cells.get(h+'-'+d),old=s?.palletizedAt&&oldest.get(s.itemCode||s.palletBar)===s.palletizedAt,match=s&&q&&[s.palletBar,s.itemCode].some(v=>String(v||'').toLowerCase().includes(q));return '<i class="depth-dot '+(s?'occupied-dot ':'')+(old?'oldest-dot ':'')+(match?'matching-dot':'')+'" title="H'+h+' • P'+d+(s?' • '+esc(s.palletBar)+' • '+esc(s.itemCode):' • Livre')+'"></i>'}).join('')+'</span>'}).join('');
- return '<button class="place '+(ss.length?'used ':'')+(hit?'hit':'')+'" data-loc="'+loc+'" aria-label="'+loc+', '+ss.length+' de '+cap+' paletes"><b class="loc-title">'+loc+'</b><span class="loc-count">'+(ss.length?ss.length+' / '+cap+' paletes':cap+' VAGAS LIVRES')+'</span><span class="level-stack">'+levels+'</span></button>'
- }).join('')+'</div></div>').join('');
+ const blocks=[];
+ for(const b of structure.blocks){
+  const cards=[];
+  for(let n=0;n<b.count;n++){
+   const loc=b.code+'-'+String(n+1).padStart(2,'0'),ss=slots(loc),c=config(loc),cap=c.height*c.depth;
+   total+=ss.length;capacity+=cap;if(ss.length)occupied++;
+   const locMatch=!!q&&loc.toLowerCase().includes(q);
+   const found=ss.filter(s=>[s.palletBar,s.itemCode].some(v=>String(v||'').toLowerCase().includes(q)));
+   if(q&&!locMatch&&!found.length)continue;
+   if(q)matches.push({loc,slots:locMatch?ss:found,locMatch});
+   const cells=new Map(ss.map(s=>[s.height+'-'+s.depth,s]));
+   const levels=Array.from({length:c.height},(_,i)=>{const h=c.height-i;return '<span class="level-row" style="grid-template-columns:25px repeat('+c.depth+',minmax(0,1fr))"><b>H'+h+'</b>'+Array.from({length:c.depth},(_,j)=>{const d=j+1,s=cells.get(h+'-'+d),old=s?.palletizedAt&&oldest.get(s.itemCode||s.palletBar)===s.palletizedAt,match=s&&q&&[s.palletBar,s.itemCode].some(v=>String(v||'').toLowerCase().includes(q));return '<i class="depth-dot '+(s?'occupied-dot ':'')+(old?'oldest-dot ':'')+(match?'matching-dot':'')+'" title="H'+h+' • P'+d+(s?' • '+esc(s.palletBar)+' • '+esc(s.itemCode):' • Livre')+'"></i>'}).join('')+'</span>'}).join('');
+   cards.push('<button class="place '+(ss.length?'used ':'')+(q?'hit':'')+'" data-loc="'+loc+'" aria-label="'+loc+', '+ss.length+' de '+cap+' paletes"><b class="loc-title">'+loc+'</b><span class="loc-count">'+(ss.length?ss.length+' / '+cap+' paletes':cap+' VAGAS LIVRES')+'</span><span class="level-stack">'+levels+'</span></button>');
+  }
+  if(cards.length)blocks.push('<div class="card wms-block"><div class="block-heading"><h2>BLOCO '+esc(b.code)+'</h2><small>'+cards.length+' posição(ões) exibida(s) • '+esc(activeUnit)+'</small></div><div class="grid wms-address-grid">'+cards.join('')+'</div></div>');
+ }
+ $('map').innerHTML=blocks.join('')||(q?'<div class="card">Nenhuma posição encontrada para esta pesquisa.</div>':'');
  $('summary').innerHTML=[['Posições totalmente livres',locations().length-occupied,''],['Posições com ocupação',occupied,'red'],['Paletes ocupados',total,'orange'],['Vagas disponíveis',Math.max(0,capacity-total),'']].map(([label,value,color])=>'<div class="metric-card"><span>'+label+'</span><strong class="'+color+'">'+value+'</strong></div>').join('');
- $('map').querySelectorAll('[data-loc]').forEach(b=>b.onclick=()=>openLocation(b.dataset.loc));
+ const panel=$('searchResults');panel.hidden=!q;
+ if(q){
+  panel.innerHTML='<h3>🔎 Onde está o palete • '+matches.length+' posição(ões)</h3>'+(matches.length?matches.map(m=>'<div class="search-result"><div><b>📍 '+esc(m.loc)+'</b> • '+esc(activeUnit)+(m.slots.length?m.slots.map(s=>'<p>Barra: <b>'+esc(s.palletBar)+'</b> • Item: <b>'+esc(s.itemCode)+'</b> • H'+s.height+' / P'+s.depth+' • Entrada: '+esc(date(s.palletizedAt))+'</p>').join(''):'<p>Posição livre</p>')+'</div><button type="button" data-result-loc="'+m.loc+'">ABRIR POSIÇÃO</button></div>').join(''):'<p>Nenhum palete ou endereço encontrado nesta unidade.</p>');
+  panel.querySelectorAll('[data-result-loc]').forEach(btn=>btn.onclick=()=>openLocation(btn.dataset.resultLoc));
+ }
+ $('map').querySelectorAll('[data-loc]').forEach(btn=>btn.onclick=()=>openLocation(btn.dataset.loc));
 }
+
 function group(ss){const result=new Map();for(const s of ss){const k=JSON.stringify([s.palletBar,s.itemCode]);if(!result.has(k))result.set(k,{palletBar:s.palletBar,itemCode:s.itemCode,slots:[]});result.get(k).slots.push(s)}return [...result.values()]}
 let locationEditor=null;
 function compactLevels(list){const counters=new Map();return [...list].sort((a,b)=>a.height-b.height||a.depth-b.depth).map(s=>{const d=(counters.get(s.height)||0)+1;counters.set(s.height,d);return {...s,depth:d}})}
