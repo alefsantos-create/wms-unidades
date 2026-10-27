@@ -91,7 +91,7 @@ dialog{width:min(1180px,96vw);max-height:92vh}
 .slot-address small{font-size:10px;margin-top:4px}
 .slot-edit label{font-size:11px;margin:0 0 4px}
 .slot-edit input,.slot-edit select{min-width:0;min-height:38px!important;height:38px;padding:7px 8px!important;font-size:14px!important}
-.slot-quantity-fields{display:grid;grid-template-columns:minmax(0,1fr) 82px;gap:5px}
+.slot-quantity-fields{display:grid;grid-template-columns:minmax(0,1fr) 58px;gap:5px}.slot-quantity-fields input,.slot-quantity-fields select{width:100%;min-width:0}
 .slot-empty{min-height:54px;padding:4px;gap:4px}
 .slot-empty input{width:18px;min-height:18px;height:18px}
 .slot-empty span{font-size:10px}
@@ -123,10 +123,10 @@ dialog{width:min(1180px,96vw);max-height:92vh}
  .slot-edit{grid-template-columns:42px minmax(0,1fr) minmax(0,1fr) 50px;gap:5px;padding:6px}
  .slot-address{font-size:15px}
  .slot-edit input,.slot-edit select{font-size:12px!important;padding:6px!important}
- .slot-quantity-fields{grid-template-columns:minmax(0,1fr) 76px}
+ .slot-quantity-fields{grid-template-columns:minmax(0,1fr) 58px}
 }
 </style></head><body class="logged-out"><!-- CABEÇALHO: nome/versão visível e controles gerais. -->
-<header><div class="brand"><button id="navToggle" class="hamb" aria-label="Abrir ou fechar menu" aria-expanded="true">☰</button><h1>📦 WMS • Unidades <span class="badge">v2.1 • Quantidade por palete</span></h1></div><div class="clock"><strong id="clockTime">--:--:--</strong><small id="clockDate"></small></div></header><div id="navBackdrop"></div><aside id="sideNav"><div class="nav-caption">GESTÃO DE ARMAZENAGEM</div><button id="navMap" class="active">🗺️ WMS • Localizações</button><button id="navConfig" hidden>⚙️ Configuração dos blocos</button><div class="userbox"><div id="identity"></div><button id="changePassword" hidden>🔑 ALTERAR MINHA SENHA</button><button id="exit" hidden>SAIR DO SISTEMA</button><div class="nav-foot">UIA • UIA2 • UIA3 • UIA4 • UIA5</div></div></aside><main>
+<header><div class="brand"><button id="navToggle" class="hamb" aria-label="Abrir ou fechar menu" aria-expanded="true">☰</button><h1>📦 WMS • Unidades <span class="badge">v2.2 • Campo de quantidade ampliado</span></h1></div><div class="clock"><strong id="clockTime">--:--:--</strong><small id="clockDate"></small></div></header><div id="navBackdrop"></div><aside id="sideNav"><div class="nav-caption">GESTÃO DE ARMAZENAGEM</div><button id="navMap" class="active">🗺️ WMS • Localizações</button><button id="navConfig" hidden>⚙️ Configuração dos blocos</button><div class="userbox"><div id="identity"></div><button id="changePassword" hidden>🔑 ALTERAR MINHA SENHA</button><button id="exit" hidden>SAIR DO SISTEMA</button><div class="nav-foot">UIA • UIA2 • UIA3 • UIA4 • UIA5</div></div></aside><main>
 <!-- LOGIN: autenticação por e-mail e senha via Firebase Authentication. -->
 <section id="login" class="card login"><h2>Acesso à unidade</h2><p class="muted">Use seu e-mail e senha cadastrados. A unidade é definida na sua liberação.</p><form id="loginForm"><label>E-mail</label><input id="email" type="email" autocomplete="username" required><label>Senha</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" style="width:100%;margin-top:16px">Entrar</button></form><p id="loginMsg" class="error" role="alert"></p></section>
 <!-- APLICAÇÃO: seleção de unidade, mapa, pesquisa, baixa e abertura dos diálogos. -->
